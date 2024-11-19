@@ -2,12 +2,14 @@ const nodemailer = require('nodemailer');
 
 // Configuración de Nodemailer
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER, // Usar variables de entorno
-    pass: process.env.EMAIL_PASSWORD, // Usar variables de entorno
-  },
-});
+    host: 'smtp.gmail.com', // Host del servidor SMTP de Gmail
+    port: 465, // Puerto para conexiones seguras (SSL)
+    secure: true, // true para usar SSL, false para usar TLS o STARTTLS
+    auth: {
+      user: 'preciadojairo82@gmail.com', // Tu correo
+      pass: 'fgfv fcnt cwqr rwva', // Contraseña de la aplicación
+    },
+  });
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
