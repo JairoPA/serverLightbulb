@@ -14,27 +14,49 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 module.exports = async (req, res) => {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método no permitido. Usa POST." });
-  }
+  if (req.method === "GET") {
+    // Maneja solicitudes GET
+    const userId = req.query.userId;
 
-  const { userId, pin, horarios } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: "Falta el parámetro userId" });
+    }
 
-  if (!userId || !pin || !horarios) {
-    return res.status(400).json({ error: "Faltan datos obligatorios: userId, pin o horarios." });
-  }
+    try {
+      const docRef = db.collection("BD").doc(userId);
+      const docSnap = await docRef.get();
 
-  try {
-    const deviceRef = db.collection("BD").doc(userId);
+      if (!docSnap.exists) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
 
-    // Actualiza los horarios del dispositivo específico
-    await deviceRef.update({
-      [`devices.${pin}.horarios`]: horarios,
-    });
+      const data = docSnap.data();
+      return res.status(200).json(data);
+    } catch (error) {
+      console.error("Error al obtener datos:", error);
+      return res.status(500).json({ error: "Error interno del servidor" });
+    }
+  } else if (req.method === "POST") {
+    // Maneja solicitudes POST (tu lógica original)
+    const { userId, pin, horarios } = req.body;
 
-    return res.status(200).json({ message: "Horario actualizado correctamente." });
-  } catch (error) {
-    console.error("Error al actualizar horarios:", error);
-    return res.status(500).json({ error: "Error al actualizar horarios." });
+    if (!userId || !pin || !horarios) {
+      return res.status(400).json({ error: "Faltan datos obligatorios: userId, pin o horarios." });
+    }
+
+    try {
+      const deviceRef = db.collection("BD").doc(userId);
+
+      await deviceRef.update({
+        [`devices.${pin}.horarios`]: horarios,
+      });
+
+      return res.status(200).json({ message: "Horario actualizado correctamente." });
+    } catch (error) {
+      console.error("Error al actualizar horarios:", error);
+      return res.status(500).json({ error: "Error al actualizar horarios." });
+    }
+  } else {
+    return res.status(405).json({ error: "Método no permitido." });
   }
 };
