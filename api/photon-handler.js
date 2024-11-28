@@ -33,7 +33,45 @@ async function generateOAuth2Token() {
   return accessToken;
 }
 
-// Procesar los datos para devolver horarios estructurados
+async function handler(req, res) {
+  if (req.method === "GET") {
+    try {
+      const userId = req.query.userId; // Obtener el userId de la consulta
+      if (!userId) {
+        return res.status(400).json({ error: "Falta el parámetro userId" });
+      }
+
+      if (!accessToken || Date.now() >= tokenExpiration) {
+        console.log("Generando un nuevo token...");
+        await generateOAuth2Token();
+      }
+
+      const url = `https://firestore.googleapis.com/v1/projects/lightbulb-5fcc3/databases/(default)/documents/BD/${userId}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const horarios = extractHorarios(data);
+
+      res.json({ success: true, horarios });
+    } catch (error) {
+      console.error("Error al consultar dispositivos:", error.message || error);
+      res.status(500).json({ error: "Error al consultar dispositivos" });
+    }
+  } else {
+    res.status(405).json({ error: "Método no permitido" });
+  }
+}
+
 function extractHorarios(data) {
   const devices = data.fields.devices.mapValue.fields;
   const horarios = {};
@@ -51,42 +89,6 @@ function extractHorarios(data) {
   }
 
   return horarios;
-}
-
-async function handler(req, res) {
-  if (req.method === "GET") {
-    try {
-      if (!accessToken || Date.now() >= tokenExpiration) {
-        console.log("Generando un nuevo token...");
-        await generateOAuth2Token();
-      }
-
-      const url =
-        "https://firestore.googleapis.com/v1/projects/lightbulb-5fcc3/databases/(default)/documents/BD/Eq4lpglZhVYyLFIzZOHzAnLJpZf1";
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      const horarios = extractHorarios(data);
-
-      res.json({ success: true, horarios });
-    } catch (error) {
-      console.error("Error al consultar dispositivos:", error.message || error);
-      res.status(500).json({ error: "Error al consultar dispositivos" });
-    }
-  } else {
-    res.status(405).json({ error: "Método no permitido" });
-  }
 }
 
 module.exports = handler;
