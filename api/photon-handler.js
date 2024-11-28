@@ -10,31 +10,47 @@ const serviceAccount = {
   client_id: "116347767832294146955",
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
   token_uri: "https://oauth2.googleapis.com/token",
-  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/v1/certs",
   client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-aszf8%40lightbulb-5fcc3.iam.gserviceaccount.com",
-  universe_domain: "googleapis.com"
 };
 
+// Variables globales para el token
 let accessToken = null;
 let tokenExpiration = null;
 
+// Función para generar un token OAuth 2.0
 async function generateOAuth2Token() {
-  try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: serviceAccount,
-      scopes: ["https://www.googleapis.com/auth/cloud-platform"],
-    });
+  const auth = new google.auth.GoogleAuth({
+    credentials: serviceAccount,
+    scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+  });
 
-    const client = await auth.getClient();
-    const tokenResponse = await client.getAccessToken();
-    accessToken = tokenResponse.token;
-    tokenExpiration = Date.now() + 55 * 60 * 1000;
-    console.log("Token generado:", accessToken);
-    return accessToken;
-  } catch (error) {
-    console.error("Error al generar el token:", error.message || error);
-    throw error;
+  const client = await auth.getClient();
+  const tokenResponse = await client.getAccessToken();
+  accessToken = tokenResponse.token;
+  tokenExpiration = Date.now() + 55 * 60 * 1000;
+  console.log("Token generado:", accessToken);
+  return accessToken;
+}
+
+// Procesar los datos para devolver horarios estructurados
+function extractHorarios(data) {
+  const devices = data.fields.devices.mapValue.fields;
+  const horarios = {};
+
+  for (const [deviceKey, deviceValue] of Object.entries(devices)) {
+    const horariosField = deviceValue.mapValue.fields.horarios?.mapValue?.fields || {};
+    horarios[deviceKey] = {};
+
+    for (const [horarioKey, horarioValue] of Object.entries(horariosField)) {
+      horarios[deviceKey][horarioKey] = {
+        on: horarioValue.mapValue.fields.on.stringValue,
+        off: horarioValue.mapValue.fields.off.stringValue,
+      };
+    }
   }
+
+  return horarios;
 }
 
 async function handler(req, res) {
@@ -60,8 +76,10 @@ async function handler(req, res) {
       }
 
       const data = await response.json();
-      const devices = data.fields.devices.mapValue.fields;
-      res.json({ success: true, devices });
+
+      const horarios = extractHorarios(data);
+
+      res.json({ success: true, horarios });
     } catch (error) {
       console.error("Error al consultar dispositivos:", error.message || error);
       res.status(500).json({ error: "Error al consultar dispositivos" });
