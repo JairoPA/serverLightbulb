@@ -1,43 +1,46 @@
 const admin = require("firebase-admin");
 
-// Inicializar Firebase con las credenciales desde la variable de entorno
-if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS); // Leer credenciales desde el Secret
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
-console.log(
-  "Credenciales cargadas desde FIREBASE_CREDENTIALS:",
-  process.env.FIREBASE_CREDENTIALS ? "Cargadas correctamente" : "No se encontraron"
-);
+// Inicializa Firebase solo si no está inicializado
+// Ruta al archivo JSON de la cuenta de servicio
+const serviceAccount = require("./credenciales.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 const db = admin.firestore();
 
 module.exports = async (req, res) => {
+  // Verifica que sea un método GET
   if (req.method === "GET") {
-    const { userId } = req.query;
+    const { userId, pin } = req.query;
 
-    if (!userId) {
-      return res.status(400).json({ error: "Falta el parámetro userId." });
+    if (!userId || !pin) {
+      return res.status(400).json({ error: "Faltan parámetros: userId o pin" });
     }
 
     try {
-      const userRef = db.collection("BD").doc(userId);
-      const userDoc = await userRef.get();
+      // Obtiene los datos del documento de Firebase
+      const docRef = db.collection("BD").doc(userId);
+      const doc = await docRef.get();
 
-      if (!userDoc.exists()) {
-        return res.status(404).json({ error: "Usuario no encontrado." });
+      if (!doc.exists) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
       }
 
-      // Devolver todos los dispositivos y horarios
-      const devices = userDoc.data()?.devices || {};
-      return res.status(200).json({ devices });
+      const device = doc.data()?.devices?.[pin];
+      if (!device) {
+        return res.status(404).json({ error: `Dispositivo ${pin} no encontrado` });
+      }
+
+      // Devuelve los horarios asociados al dispositivo
+      const horarios = device.horarios || {};
+      return console.log("este son los horarios", horarios);
     } catch (error) {
-      console.error("Error al obtener datos:", error.message);
-      return res.status(500).json({ error: "Error interno al obtener datos." });
+      console.error("Error al obtener horarios:", error.message);
+      return res.status(500).json({ error: "Error interno del servidor" });
     }
   } else {
-    return res.status(405).json({ error: "Método no permitido." });
+    return res.status(405).json({ error: "Método no permitido" });
   }
 };
