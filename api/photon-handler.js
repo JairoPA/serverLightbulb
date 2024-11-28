@@ -1,9 +1,10 @@
 const admin = require("firebase-admin");
 
-// Inicializar Firebase con las credenciales del archivo JSON
+// Inicializar Firebase con las credenciales desde la variable de entorno
 if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS); // Leer credenciales desde el Secret
   admin.initializeApp({
-    credential: admin.credential.cert(require("./firebaseServiceAccountKey.json")), // Asegúrate de la ruta correcta
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
@@ -21,7 +22,7 @@ module.exports = async (req, res) => {
       const userRef = db.collection("BD").doc(userId);
       const userDoc = await userRef.get();
 
-      if (!userDoc.exists) {
+      if (!userDoc.exists()) {
         return res.status(404).json({ error: "Usuario no encontrado." });
       }
 
