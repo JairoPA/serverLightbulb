@@ -13,13 +13,12 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Endpoint para obtener horarios
 module.exports = async (req, res) => {
   if (req.method === "GET") {
-    const { userId, pin } = req.query;
+    const { userId } = req.query;
 
-    if (!userId || !pin) {
-      return res.status(400).json({ error: "Faltan parámetros userId o pin" });
+    if (!userId) {
+      return res.status(400).json({ error: "Falta el parámetro userId." });
     }
 
     try {
@@ -27,16 +26,17 @@ module.exports = async (req, res) => {
       const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
-        return res.status(404).json({ error: "Usuario no encontrado" });
+        return res.status(404).json({ error: "Usuario no encontrado." });
       }
 
-      const horarios = userDoc.data()?.devices?.[pin]?.horarios || {};
-      return res.status(200).json({ horarios });
+      // Devolver todos los dispositivos y horarios
+      const devices = userDoc.data()?.devices || {};
+      return res.status(200).json({ devices });
     } catch (error) {
       console.error("Error al obtener datos:", error.message);
-      return res.status(500).json({ error: "Error interno del servidor" });
+      return res.status(500).json({ error: "Error interno al obtener datos." });
     }
   } else {
-    return res.status(405).json({ error: "Método no permitido" });
+    return res.status(405).json({ error: "Método no permitido." });
   }
 };
