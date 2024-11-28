@@ -7,6 +7,10 @@ if (!admin.apps.length) {
     credential: admin.credential.cert(serviceAccount),
   });
 }
+console.log(
+  "Credenciales cargadas desde FIREBASE_CREDENTIALS:",
+  process.env.FIREBASE_CREDENTIALS ? "Cargadas correctamente" : "No se encontraron"
+);
 
 const db = admin.firestore();
 
