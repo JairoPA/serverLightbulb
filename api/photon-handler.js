@@ -1,12 +1,13 @@
 const admin = require("firebase-admin");
 
 // Inicializa Firebase solo si no está inicializado
-// Ruta al archivo JSON de la cuenta de servicio
-const serviceAccount = require("./credenciales.json");
+if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE); // Cargar credenciales desde variable de entorno
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
 
 const db = admin.firestore();
 
@@ -35,7 +36,7 @@ module.exports = async (req, res) => {
 
       // Devuelve los horarios asociados al dispositivo
       const horarios = device.horarios || {};
-      return console.log("este son los horarios", horarios);
+      return res.status(200).json({ success: true, horarios });
     } catch (error) {
       console.error("Error al obtener horarios:", error.message);
       return res.status(500).json({ error: "Error interno del servidor" });
