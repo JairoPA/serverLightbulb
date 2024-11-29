@@ -5,7 +5,7 @@ const serviceAccount = {
   type: "service_account",
   project_id: "lightbulb-5fcc3",
   private_key_id: "c0ebf194d623b52a24a4cab7c57114b4c7a1c154",
-  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDbVgLmZNjtF1hQ\nipWb92/aM4WuEoqL4dFMQ+56c9RFX3rqexkzgLowY/awzPonRl4YGG03GQv3W9NT\nT+qIUOWVARTITS83eydh8A1Upy4iLxCdawCQDHZl5FHpIHd1VTm8rbC6uHKLS9rx\nbQCPFb7ao8RRAF4j9z7tltS1+zKzoyIrWaIeqU2I1aMlf9rVVqwH9IvgnmafwdSs\nOuuuCWVDnLY3eYE0hBxe/0eLJLj9xR4IvOkgctOeHjLNSg3KCPMljXVE5tQcS9k2\nd1toFRlLOvc7a8lNHzmscNgS3BI7NPxkx3sxUSX1U531qOAW31TFPReFpfG7zBcE\nsRO7BZJPAgMBAAECggEAUAQKTcvHmYL1PHi6SKpVm1hFcfIgqhRJGxYDN5fu/hnt\niQI8eN4CzqmBMxGsRsy0gfzTRxDznRtaNmAGsxE0GA5LayFBUu+yN9fvvQy6V00t\nNgh1rZdmUBihyzcFbYAYbp08xnmIjAmxx3aZCBoKRNAOy/Ai5+MIiXuHgRYxcnep\nb4+uiLk1/h+pLV+2l7RXL8a/ru+Y/UMx3oUzM2Dwr8ac1k+D7chqcZt86l2R3uER\nD6TOpKwJ86gH4nXRV08FmvIiOaGsvka1Bbv6tG0Lsm96GNyLQrLyS/bZoW/7F2XZ\nLa8gZblcbStluePCSomt+vYpWmIyPbo2cS5ECRtqEQKBgQD3XEbnf+T1/4GEes0h\nHmUkHomU1j1+A7Y6ZKpPonlEt79eqRn0CrBxERHjzLbf1MZnGoPQyJyx4PJ9z79k\nGRKC1zZm8TVrOkMEbft7wZZKqP2IPjiZG6bUD4NAZGg/w3lzud3jbssctd9P+APL\nRzsRh5kUYQWHDQZQ6WuKQxxocQKBgQDi/yjDk/if0bGKFtxrt4BAj6m6NZXqtw7v\nxsu+oSfjl3aFqzRp6p9HxHBC/GH+GJ5ZCikH4Wz8/9zNlemTf6aZZtYTuzrqpyNz\nwKQAJ2qKu39AjAwLtHKLmqgSt9d591xx96e20CxAkVo46lbjTqS7zNzOiWTvb1pD\ndHO7bPEGvwKBgQCABctQv3nB9AaViXUnYfLY2dE9LhDPap5i5HzdEGsRLMSn+n9L\nNkkRi9MlgmtXt2kkLa3xXhLzYUg/40jcRrm07Cvk5YxPPe03mrCg4ZWmeIYXgJSM\ncapLcOfuaMknz0TJp3X24v3OkzbLzcIw8GHa9cI9sOVKe2w8bkLRYWCPkQKBgFtg\nt/ozQOylL0EVftnl3r0emAabt6Pq2Rpw/mfY3APkXxPkHY9doYz0aPSuQIxXQLc7\nPdUsTAF0xmAELyjvRBOQsDD1N/xqF/1q2Rouw9bhL5K+TcMQeuPz+CDA3P7+Mrq2\nJU+UcZv0Z0tuGlgaunnXODP0Xyt7uexZnpUef9BlAoGAJ7yt0yobUqAcf7mEcX22\nhL/ZIlKMjyKfgLRGHeaK7pkjOk8FIT936qhyvhgsUD8R5IpCje8rF7G4D+1jYXbW\nrH99vj9ADp+pkU7/RDgdAxPOc2+qaax90Be8xSxPUVvQlLk08m55dv4wo3rSp28L\nRL01QMi9+rdC35E5jOYI/1Y=\n-----END PRIVATE KEY-----\n",
+  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADAN...",
   client_email: "firebase-adminsdk-aszf8@lightbulb-5fcc3.iam.gserviceaccount.com",
   client_id: "116347767832294146955",
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
@@ -33,6 +33,7 @@ async function generateOAuth2Token() {
   return accessToken;
 }
 
+// Endpoint para manejar solicitudes GET
 async function handler(req, res) {
   if (req.method === "GET") {
     try {
@@ -67,11 +68,62 @@ async function handler(req, res) {
       console.error("Error al consultar dispositivos:", error.message || error);
       res.status(500).json({ error: "Error al consultar dispositivos" });
     }
+  } else if (req.method === "POST") {
+    // Manejar la solicitud POST para recibir photonId y apiKey
+    try {
+      const { photonId, apiKey } = req.body;
+
+      if (!photonId || !apiKey) {
+        return res.status(400).json({ error: "Faltan parámetros: photonId o apiKey." });
+      }
+
+      console.log("Datos recibidos:", { photonId, apiKey });
+
+      // Enviar los datos a Particle
+      const particleResponse = await sendToParticle(photonId, apiKey);
+
+      res.status(200).json({ success: true, particleResponse });
+    } catch (error) {
+      console.error("Error al procesar la solicitud POST:", error.message || error);
+      res.status(500).json({ error: "Error al procesar la solicitud POST." });
+    }
   } else {
     res.status(405).json({ error: "Método no permitido" });
   }
 }
 
+//mandar a particle
+async function sendToParticle(photonId, apiKey, horarios) {
+  const particleUrl = `https://api.particle.io/v1/devices/${photonId}/actualizarHorario`;
+
+  try {
+    // Convertir los horarios con sus pines a un string JSON
+    const horariosString = JSON.stringify(horarios);
+
+    const response = await fetch(particleUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      // Enviar los horarios como un JSON en el parámetro args
+      body: `args=${encodeURIComponent(horariosString)}`,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error de Particle: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log("Respuesta de Particle:", data);
+    return data;
+  } catch (error) {
+    console.error("Error al enviar datos a Particle:", error.message || error);
+    throw new Error("Error al enviar datos a Particle.");
+  }
+}
+
+// Función para extraer los horarios
 function extractHorarios(data) {
   const devices = data.fields.devices.mapValue.fields;
   const horarios = {};
