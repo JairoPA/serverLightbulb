@@ -33,64 +33,6 @@ async function generateOAuth2Token() {
   return accessToken;
 }
 
-// Endpoint para manejar solicitudes GET
-async function handler(req, res) {
-  if (req.method === "GET") {
-    try {
-      const userId = req.query.userId; // Obtener el userId de la consulta
-      if (!userId) {
-        return res.status(400).json({ error: "Falta el parámetro userId" });
-      }
-
-      if (!accessToken || Date.now() >= tokenExpiration) {
-        console.log("Generando un nuevo token...");
-        await generateOAuth2Token();
-      }
-
-      const url = `https://firestore.googleapis.com/v1/projects/lightbulb-5fcc3/databases/(default)/documents/BD/${userId}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const horarios = extractHorarios(data);
-
-      res.json({ success: true, horarios });
-    } catch (error) {
-      console.error("Error al consultar dispositivos:", error.message || error);
-      res.status(500).json({ error: "Error al consultar dispositivos" });
-    }
-  } else if (req.method === "POST") {
-    // Manejar la solicitud POST para recibir photonId y apiKey
-    try {
-      const { photonId, apiKey } = req.body;
-
-      if (!photonId || !apiKey) {
-        return res.status(400).json({ error: "Faltan parámetros: photonId o apiKey." });
-      }
-
-      console.log("Datos recibidos:", { photonId, apiKey });
-
-      // Enviar los datos a Particle
-      const particleResponse = await sendToParticle(photonId, apiKey);
-
-      res.status(200).json({ success: true, particleResponse });
-    } catch (error) {
-      console.error("Error al procesar la solicitud POST:", error.message || error);
-      res.status(500).json({ error: "Error al procesar la solicitud POST." });
-    }
-  } else {
-    res.status(405).json({ error: "Método no permitido" });
-  }
-}
 // DELETE: Eliminar horario
 app.delete("/api/horarios/:deviceId/:horarioId", async (req, res) => {
   try {
@@ -115,10 +57,10 @@ app.delete("/api/horarios/:deviceId/:horarioId", async (req, res) => {
     }
 
     const data = await response.json();
-    const horarios = data.fields.horarios.mapValue.fields;
+    const horarios = data.fields.horarios?.mapValue?.fields;
 
     // Eliminar el horario del objeto
-    if (horarios[horarioId]) {
+    if (horarios?.[horarioId]) {
       delete horarios[horarioId];
     } else {
       return res.status(404).json({ error: "Horario no encontrado." });
@@ -154,56 +96,3 @@ app.delete("/api/horarios/:deviceId/:horarioId", async (req, res) => {
     res.status(500).json({ error: "Error al eliminar horario." });
   }
 });
-
-//mandar a particle
-async function sendToParticle(photonId, apiKey, horarios) {
-  const particleUrl = `https://api.particle.io/v1/devices/${photonId}/actualizarHorario`;
-
-  try {
-    // Convertir los horarios con sus pines a un string JSON
-    const horariosString = JSON.stringify(horarios);
-
-    const response = await fetch(particleUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      // Enviar los horarios como un JSON en el parámetro args
-      body: `args=${encodeURIComponent(horariosString)}`,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error de Particle: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log("Respuesta de Particle:", data);
-    return data;
-  } catch (error) {
-    console.error("Error al enviar datos a Particle:", error.message || error);
-    throw new Error("Error al enviar datos a Particle.");
-  }
-}
-
-// Función para extraer los horarios
-function extractHorarios(data) {
-  const devices = data.fields.devices.mapValue.fields;
-  const horarios = {};
-
-  for (const [deviceKey, deviceValue] of Object.entries(devices)) {
-    const horariosField = deviceValue.mapValue.fields.horarios?.mapValue?.fields || {};
-    horarios[deviceKey] = {};
-
-    for (const [horarioKey, horarioValue] of Object.entries(horariosField)) {
-      horarios[deviceKey][horarioKey] = {
-        on: horarioValue.mapValue.fields.on.stringValue,
-        off: horarioValue.mapValue.fields.off.stringValue,
-      };
-    }
-  }
-
-  return horarios;
-}
-
-module.exports = handler;
