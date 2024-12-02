@@ -91,6 +91,69 @@ async function handler(req, res) {
     res.status(405).json({ error: "Método no permitido" });
   }
 }
+// DELETE: Eliminar horario
+app.delete("/api/horarios/:deviceId/:horarioId", async (req, res) => {
+  try {
+    const { deviceId, horarioId } = req.params;
+
+    if (!deviceId || !horarioId) {
+      return res.status(400).json({ error: "Faltan parámetros: deviceId o horarioId." });
+    }
+
+    const url = `https://firestore.googleapis.com/v1/projects/lightbulb-5fcc3/databases/(default)/documents/BD/${deviceId}`;
+
+    // Obtener la información actual del dispositivo
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener dispositivo: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const horarios = data.fields.horarios.mapValue.fields;
+
+    // Eliminar el horario del objeto
+    if (horarios[horarioId]) {
+      delete horarios[horarioId];
+    } else {
+      return res.status(404).json({ error: "Horario no encontrado." });
+    }
+
+    // Actualizar el dispositivo en Firestore
+    const updateUrl = `https://firestore.googleapis.com/v1/projects/lightbulb-5fcc3/databases/(default)/documents/BD/${deviceId}?updateMask.fieldPaths=horarios`;
+
+    const updateResponse = await fetch(updateUrl, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        fields: {
+          horarios: {
+            mapValue: {
+              fields: horarios,
+            },
+          },
+        },
+      }),
+    });
+
+    if (!updateResponse.ok) {
+      throw new Error(`Error al actualizar dispositivo: ${updateResponse.statusText}`);
+    }
+
+    res.status(200).json({ success: true, message: "Horario eliminado correctamente." });
+  } catch (error) {
+    console.error("Error al eliminar horario:", error);
+    res.status(500).json({ error: "Error al eliminar horario." });
+  }
+});
 
 //mandar a particle
 async function sendToParticle(photonId, apiKey, horarios) {
