@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 // Middleware para habilitar CORS
 const enableCORS = (req, res) => {
   const allowedOrigins = [
-    'https://instalaciones-a47g.vercel.app', // Dominio de tu app we
+    'https://instalaciones-a47g.vercel.app', // Dominio de tu app web
   ];
 
   const origin = req.headers.origin;
@@ -34,7 +34,11 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     // Respuesta preflight para solicitudes CORS
-    return res.status(204).end(); // 204: No Content
+    res.setHeader('Access-Control-Allow-Origin', 'https://instalaciones-a47g.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.status(204).end(); // 204: No Content
+    return;
   }
 
   if (req.method === 'POST') {
