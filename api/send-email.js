@@ -11,8 +11,8 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: process.env.EMAIL_USER, // Usa variables de entorno
-    pass: process.env.EMAIL_PASS, // Usa variables de entorno
+    user: 'preciadojairo82@gmail.com', // Tu correo
+    pass: 'fgfv fcnt cwqr rwva', // Contraseña de la aplicación
   },
 });
 
