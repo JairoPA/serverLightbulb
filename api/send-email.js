@@ -1,11 +1,23 @@
 import nodemailer from 'nodemailer';
 
+// Middleware para habilitar CORS
 const enableCORS = (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Cambia '*' por tu dominio si es necesario
+  const allowedOrigins = [
+    'https://instalaciones-a47g.vercel.app', // Dominio de tu app we
+  ];
+
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400'); // Cachea la respuesta preflight por 1 día
 };
 
+// Configuración del transporte de Nodemailer
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -16,15 +28,21 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Handler principal
 export default async function handler(req, res) {
-  enableCORS(req, res); // Asegúrate de que CORS se aplica en todas las rutas
+  enableCORS(req, res); // Aplica CORS a todas las solicitudes
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end(); // Respuesta adecuada para preflight
+    // Respuesta preflight para solicitudes CORS
+    return res.status(204).end(); // 204: No Content
   }
 
   if (req.method === 'POST') {
     const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Faltan campos requeridos: email o code' });
+    }
 
     try {
       await transporter.sendMail({
