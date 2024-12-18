@@ -1,17 +1,39 @@
+const cors = require('cors');
 const nodemailer = require('nodemailer');
+
+// Configurar CORS
+const cors = Cors({
+  methods: ['GET', 'POST', 'OPTIONS'], // Métodos permitidos
+  origin: '*', // Permite solicitudes desde cualquier origen (puedes ajustar esto para permitir solo ciertos dominios)
+  allowedHeaders: ['Content-Type'], // Puedes agregar otros encabezados si es necesario
+});
+
+// Inicializar el middleware de CORS
+const runCors = (req, res, next) => {
+  cors(req, res, (result) => {
+    if (result instanceof Error) {
+      next(result);
+    } else {
+      next();
+    }
+  });
+};
 
 // Configuración de Nodemailer
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', // Host del servidor SMTP de Gmail
-    port: 465, // Puerto para conexiones seguras (SSL)
-    secure: true, // true para usar SSL, false para usar TLS o STARTTLS
-    auth: {
-      user: 'preciadojairo82@gmail.com', // Tu correo
-      pass: 'fgfv fcnt cwqr rwva', // Contraseña de la aplicación
-    },
-  });
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'preciadojairo82@gmail.com',
+    pass: 'fgfv fcnt cwqr rwva',
+  },
+});
 
 export default async function handler(req, res) {
+  // Ejecutar el middleware CORS
+  await runCors(req, res, () => {});
+
   if (req.method === 'POST') {
     const { email, code } = req.body;
 
