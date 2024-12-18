@@ -32,14 +32,14 @@ const transporter = nodemailer.createTransport({
 export default async function handler(req, res) {
   enableCORS(req, res); // Aplica CORS a todas las solicitudes
 
-  if (req.method === 'OPTIONS') {
+  /*if (req.method === 'OPTIONS') {
     // Respuesta preflight para solicitudes CORS
     res.setHeader('Access-Control-Allow-Origin', 'https://instalaciones-a47g.vercel.app');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.status(204).end(); // 204: No Content
     return;
-  }
+  }*/
 
   if (req.method === 'POST') {
     const { email, code } = req.body;
@@ -63,6 +63,6 @@ export default async function handler(req, res) {
     }
   }
 
-  res.setHeader('Allow', ['POST', 'OPTIONS']);
+  res.setHeader('Allow', ['POST']);
   res.status(405).end(`Method ${req.method} Not Allowed`);
 }
